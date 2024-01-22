@@ -1,7 +1,7 @@
 {
   "name": "number-adapter",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightweight module to convert number to a human readable string or bigint.",
   "type": "module",
   "main": "number-adapter.js",
