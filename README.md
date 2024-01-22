@@ -18,9 +18,28 @@ npm install number-adapter
 ## Usage
 
 ```js
+// usage1.1: parseBigint(<number | string | bigint>) 
+parseBigint(100.1) // 100n
+// usage1.2: parseBigint(<number | string | bigint>, positive enlarge) 
+parseBigint("1.0e0", 18) // 1000000000000000000n
+// usage1.3: parseBigint(<number | string | bigint>, nagative enlarge) 
+parseBigint(1000000000000000000n, -18)  // 1n
+
+// usage2.1: parseNumStr(<number | string | bigint>) 
+parseNumStr(100.1e1) // "1001"
+// usage2.2: parseNumStr(<number | string | bigint>, positive enlarge) 
+parseNumStr("1.0", 18) // "1000000000000000000"
+// usage2.3: parseNumStr(<number | string | bigint>, nagative enlarge) 
+parseNumStr(1000000000000000000n, -18)  // "1"
+```
+
+## Test
+```js
+
+// ============================test===============
 import {describe, it} from 'node:test';
 import * as assert from "assert";
-import {parseBigint, parseNumStr} from "./parse.ts";
+import {parseBigint, parseNumStr} from "./index.ts";
 
 describe("Number-Adapter", () => {
     it("magic number", () => {
