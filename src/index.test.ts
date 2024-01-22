@@ -1,6 +1,6 @@
 import {describe, it} from 'node:test';
 import * as assert from "assert";
-import {parseBigint, parseNumStr} from "./parse.ts";
+import {parseBigint, parseNumStr} from "./index.ts";
 
 describe("Number-Adapter", () => {
     it("magic number", () => {
