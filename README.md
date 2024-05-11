@@ -2,8 +2,6 @@
 
 [![NPM Package](https://img.shields.io/npm/v/number-adapter.svg?style=flat-square)](https://www.npmjs.org/package/number-adapter)
 [![Minified Size](https://img.shields.io/bundlephobia/min/number-adapter.svg?style=flat-square)](https://bundlephobia.com/result?p=number-adapter)
-[![Build Status](https://img.shields.io/travis/com/shrpne/number-adapter/master.svg?style=flat-square)](https://travis-ci.com/shrpne/number-adapter)
-[![Coverage Status](https://img.shields.io/coveralls/github/shrpne/number-adapter/master.svg?style=flat-square)](https://coveralls.io/github/shrpne/number-adapter?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/shrpne/number-adapter/blob/master/LICENSE)
 
 Lightweight module to convert number to a human readable string or bigint.
