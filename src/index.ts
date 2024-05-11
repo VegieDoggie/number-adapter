@@ -131,4 +131,9 @@ const isHex = (str: string) => {
     return str.length >= 2 && (str[0] === '0' && (str[1] === 'x' || str[1] === 'X'));
 }
 
-export {parseBigint, parseNumStr}
+// maybe unsafe
+const parseNumber = (num: FloatLike, enlarge = 0) => {
+    return Number(parseNumStr(num, enlarge))
+}
+
+export {parseBigint, parseNumStr, parseNumber}
