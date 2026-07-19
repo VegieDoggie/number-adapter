@@ -1,7 +1,7 @@
 {
   "name": "number-adapter",
   "private": false,
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Lightweight Module for Handling 'SUPER'-Large Numbers",
   "type": "module",
   "main": "number-adapter.umd.cjs",
