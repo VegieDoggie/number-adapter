@@ -2,6 +2,36 @@ import {describe, it} from 'node:test';
 import * as assert from "assert";
 import {parseBigint, parseNumStr} from "./index.ts";
 
+describe("Number-Adapter fixes", () => {
+    it("negative decimals keep their sign", () => {
+        assert.strictEqual(parseBigint("-1.5", 1), -15n)
+        assert.strictEqual(parseBigint("-0.5", 1), -5n)
+        assert.strictEqual(parseBigint("-2.7", 2), -270n)
+        assert.strictEqual(parseNumStr("-1.5", 1), "-15")
+        assert.strictEqual(parseNumStr("-0.05", 1), "-0.5")
+    })
+    it("no leading zeros after shifting", () => {
+        assert.strictEqual(parseNumStr(0.5, 1), "5")
+        assert.strictEqual(parseNumStr("0.5", 2), "50")
+    })
+    it("keeps precision beyond 15 digits for string input", () => {
+        assert.strictEqual(parseNumStr("123456789123456789.100"), "123456789123456789.1")
+        assert.strictEqual(parseNumStr("99999999999999999999", -1), "9999999999999999999.9")
+    })
+    it("hex numbers, including signed", () => {
+        assert.strictEqual(parseNumStr("0x1F"), "31")
+        assert.strictEqual(parseNumStr("-0xff"), "-255")
+        assert.strictEqual(parseBigint("0x1F", 1), 310n)
+    })
+    it("rejects invalid input instead of returning garbage", () => {
+        assert.throws(() => parseNumStr(NaN), TypeError)
+        assert.throws(() => parseNumStr(Infinity), TypeError)
+        assert.throws(() => parseNumStr("abc"), SyntaxError)
+        assert.throws(() => parseNumStr("1.2.3"), SyntaxError)
+        assert.throws(() => parseNumStr("1", 0.5), TypeError)
+    })
+})
+
 describe("Number-Adapter", () => {
     it("magic number", () => {
         // console.log(`0.3 / 0.1 = ${0.3 / 0.1}`) // 0.3 / 0.1 = 2.9999999999999996

@@ -7,79 +7,60 @@ export type FloatLike = number | string | bigint
 * */
 
 const parseBigint = (num: FloatLike, enlarge = 0): bigint => {
-    switch (typeof num) {
-        case "bigint": {
-            return enlarge >= 0 ? num * 10n ** BigInt(enlarge) : num / 10n ** BigInt(-enlarge);
-        }
-        case "string": {
-            // hex number
-            if (isHex(num)) {
-                return parseBigint(BigInt(num), enlarge)
-            } else {
-                // exp number
-                const es = isExponential(num)
-                if (es) {
-                    return parseBigint(parseBigint(es[0], Number(es[1])), enlarge)
-                }
-            }
-            // dot number
-            const dots = num.split(".")
-            if (dots.length === 1) {
-                return parseBigint(BigInt(num), enlarge)
-            }
-            const exp = 10n ** BigInt(Math.abs(enlarge))
-            return enlarge > 0
-                ? BigInt(dots[0]) * exp + BigInt(dots[1]) * exp / 10n ** BigInt(dots[1].length)
-                : BigInt(dots[0]) / exp
-        }
-        case "number":
-            const es = isExponential(num)
-            if (es) {
-                return parseBigint(parseBigint(es[0], Number(es[1])), enlarge)
-            }
-            return parseBigint(num.toPrecision(15), enlarge)
+    if (typeof num === "bigint") {
+        return enlarge >= 0 ? num * 10n ** BigInt(enlarge) : num / 10n ** BigInt(-enlarge);
     }
+    // truncate toward zero when a fractional part remains after shifting
+    return BigInt(parseNumStr(num, enlarge).split(".")[0])
 }
 
-const parseNoneExpNumStr = (num: string, enlarge: number) => {
-    if (enlarge === 0) {
-        return trimDot0(num)
-    } else {
-        // sign = ±
-        let sign = ""
-        if (num.startsWith("-")) {
-            sign = "-"
-            num = num.slice(1)
-        }
-        // dot split
-        const dots = num.split(".")
-        if (dots.length === 1) {
-            dots.push("")
-        }
-        // enlarge shift
-        let numStr: string;
-        if (enlarge > 0) {
-            // shift right: =>
-            if (enlarge >= dots[1].length) { // append: 0
-                numStr = dots[0] + dots[1] + "0".repeat(enlarge - dots[1].length)
-            } else {
-                numStr = dots[0] + dots[1].slice(0, enlarge) + "." + dots[1].slice(enlarge)
-            }
-        } else {
-            // shift left: <=
-            enlarge = -enlarge;
-            if (enlarge >= dots[0].length) { // append: 0
-                numStr = "0." + "0".repeat(enlarge - dots[0].length) + dots[0] + dots[1]
-            } else {
-                const dot = dots[0].length - enlarge
-                numStr = dots[0].slice(0, dot) + "." + dots[0].slice(dot) + dots[1]
-            }
-        }
-        return sign + trimDot0(numStr)
+const DECIMAL_RE = /^[+-]?(\d+(\.\d*)?|\.\d+)$/
+
+const parseNoneExpNumStr = (num: string, enlarge: number): string => {
+    if (!DECIMAL_RE.test(num)) {
+        throw new SyntaxError(`Cannot convert "${num}" to a numeric string`)
     }
+    // sign = ±
+    let sign = ""
+    if (num.startsWith("-")) {
+        sign = "-"
+        num = num.slice(1)
+    } else if (num.startsWith("+")) {
+        num = num.slice(1)
+    }
+    // dot split
+    const dots = num.split(".")
+    if (dots.length === 1) {
+        dots.push("")
+    }
+    // enlarge shift
+    let numStr: string;
+    if (enlarge === 0) {
+        numStr = num
+    } else if (enlarge > 0) {
+        // shift right: =>
+        if (enlarge >= dots[1].length) { // append: 0
+            numStr = dots[0] + dots[1] + "0".repeat(enlarge - dots[1].length)
+        } else {
+            numStr = dots[0] + dots[1].slice(0, enlarge) + "." + dots[1].slice(enlarge)
+        }
+    } else {
+        // shift left: <=
+        enlarge = -enlarge;
+        if (enlarge >= dots[0].length) { // append: 0
+            numStr = "0." + "0".repeat(enlarge - dots[0].length) + dots[0] + dots[1]
+        } else {
+            const dot = dots[0].length - enlarge
+            numStr = dots[0].slice(0, dot) + "." + dots[0].slice(dot) + dots[1]
+        }
+    }
+    return trimNumStr(sign + numStr)
 }
 
 const parseNumStr = (num: FloatLike, enlarge = 0): string => {
+    if (!Number.isInteger(enlarge)) {
+        throw new TypeError(`enlarge must be an integer, got: ${enlarge}`)
+    }
     switch (typeof num) {
         case "bigint": {
             return enlarge >= 0
@@ -87,9 +68,10 @@ const parseNumStr = (num: FloatLike, enlarge = 0): string => {
                 : parseNoneExpNumStr(num.toString(10), enlarge);
         }
         case "string": {
+            num = num.trim()
             // hex number
             if (isHex(num)) {
-                num = BigInt(num).toString(10)
+                num = parseHexBigint(num).toString(10)
             } else {
                 // exp number
                 const es = isExponential(num)
@@ -99,39 +81,59 @@ const parseNumStr = (num: FloatLike, enlarge = 0): string => {
             }
             return parseNoneExpNumStr(num, enlarge)
         }
-        case "number":
+        case "number": {
+            if (!Number.isFinite(num)) {
+                throw new TypeError(`Cannot convert ${num} to a numeric string`)
+            }
             const es = isExponential(num)
             if (es) {
                 return parseNumStr(parseNumStr(es[0], Number(es[1])), enlarge)
             }
             return parseNumStr(num.toPrecision(15), enlarge)
+        }
+        default:
+            throw new TypeError(`Unsupported input type: ${typeof num}`)
     }
 }
 
-const trimDot0 = (str: string) => {
-    if (Number(str) % 1 === 0) return str.split(".")[0]
-
-    let i = str.length - 1;
-    while (i >= 0 && str[i] === "0") {
-        i--;
+// strip leading zeros of the integer part and trailing zeros of the
+// fraction part, purely on strings (Number() would lose precision
+// beyond 15 significant digits)
+const trimNumStr = (str: string) => {
+    let sign = ""
+    if (str.startsWith("-")) {
+        sign = "-"
+        str = str.slice(1)
     }
-    if (i < 0) {
-        return "0";
+    const dots = str.split(".")
+    let int = dots[0].replace(/^0+(?=\d)/, "")
+    const frac = (dots[1] ?? "").replace(/0+$/, "")
+    if (int === "") {
+        int = "0"
     }
-    str = str.slice(0, i + 1)
-    return str.endsWith(".") ? str.slice(0, -1) : str;
+    const out = frac ? int + "." + frac : int
+    return out === "0" ? "0" : sign + out
 }
 
 const isExponential = (num: Exclude<FloatLike, bigint>) => {
     const es = String(num).split(/[eE]/)
-    return es.length === 2 && !Number.isNaN(Number(es[1])) && es
+    return es.length === 2 && Number.isInteger(Number(es[1])) && es
 }
 
 const isHex = (str: string) => {
-    return str.length >= 2 && (str[0] === '0' && (str[1] === 'x' || str[1] === 'X'));
+    const s = (str[0] === "-" || str[0] === "+") ? str.slice(1) : str
+    return s.length >= 2 && (s[0] === '0' && (s[1] === 'x' || s[1] === 'X'));
 }
 
-// maybe unsafe
+// BigInt() rejects signed hex strings like "-0x1f", so split the sign off
+const parseHexBigint = (str: string): bigint => {
+    if (str[0] === "-") {
+        return -BigInt(str.slice(1))
+    }
+    return BigInt(str[0] === "+" ? str.slice(1) : str)
+}
+
+// maybe unsafe: Number cannot represent every result exactly
 const parseNumber = (num: FloatLike, enlarge = 0) => {
     return Number(parseNumStr(num, enlarge))
 }

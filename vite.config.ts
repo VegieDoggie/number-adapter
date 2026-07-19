@@ -7,9 +7,12 @@ export default defineConfig({
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
-            name: pkg.name,
+            // global variable for browser <script> usage; must be a valid identifier
+            name: 'NumberAdapter',
             fileName: pkg.name,
+            formats: ['es', 'umd'],
         },
+        target: 'es2020',
     },
     plugins: [
         dts(),

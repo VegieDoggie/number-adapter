@@ -7,6 +7,21 @@
   "main": "number-adapter.umd.cjs",
   "module": "number-adapter.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./number-adapter.js",
+      "require": "./number-adapter.umd.cjs",
+      "default": "./number-adapter.js"
+    }
+  },
+  "browser": "number-adapter.umd.cjs",
+  "unpkg": "number-adapter.umd.cjs",
+  "jsdelivr": "number-adapter.umd.cjs",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=14"
+  },
   "author": "Xizi",
   "license": "MIT",
   "repository": {
